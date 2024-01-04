@@ -31,6 +31,14 @@ lab = {
         'FORMAT_NUM': '{0:2d}/{1:02d}',
         'ORDER': [0,1]
     },
+    'el': { # Greek
+        'MONTHS': [None, 'Ιανουάριος', 'Φεβρουάριος', 'Μάρτιος', 'Απρίλιος', 'Μάιος', 'Ιούνιος', 'Ιούλιος', 'Αύγουστος', 'Σεπτέμβριος', 'Οκτώβριος', 'Νοέμβριος', 'Δεκέμβριος'],
+        'MONTHS_D': [None, 'Ιανουαρίου', 'Φεβρουαρίου', 'Μαρτίου', 'Απριλίου', 'Μαΐου', 'Ιουνίου', 'Ιουλίου', 'Αυγούστου', 'Σεπτεμβρίου', 'Οκτωβρίου', 'Νοεμβρίου', 'Δεκεμβρίου'],
+        'WEEKDAYS': ['Κυριακή', 'Δευτέρ', 'Τρίτη', 'Τετάρτη', 'Πέμπτη', 'Παρασκευή', 'Σάββατο'],
+        'FORMAT_STR': '{0:2d} {1:s}',
+        'FORMAT_NUM': '{0:2d}/{1:02d}',
+        'ORDER': [0,1]
+    },
     'en': { # English
         'MONTHS': [None, 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
         'WEEKDAYS': ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
@@ -229,16 +237,18 @@ hol = {
 
 def write_down(labels, holidays):
     for code, dic in labels.items():
-        month = dic['MONTHS'][1]
+        month = dic['MONTHS_D'][1] if 'MONTHS_D' in dic else dic['MONTHS'][1]
         date = dic['FORMAT_STR'].format(1, month)
         print(f"Labels for {code:<8s} v.g. '{date}'")
-        pickle.dump(dic, open(f'labels_{code}.bin', 'wb'))
+        with open(f'labels_{code}.bin', 'wb') as file:
+            pickle.dump(dic, file)
 
     for code, dic in holidays.items():
         holiday_count = sum([len(v) for k, v in dic.items() if k[0] != '@'])
-        non_holiday_count = sum([len(v) for k, v in dic.items() if k[0] == '@'])
-        number = f'{holiday_count:2d}+{non_holiday_count:2d}' if non_holiday_count > 0 else f'{holiday_count:2d}   '
+        other_holiday_count = sum([len(v) for k, v in dic.items() if k[0] == '@'])
+        number = f'{holiday_count:2d}+{other_holiday_count:2d}' if other_holiday_count > 0 else f'{holiday_count:2d}   '
         print(f'Holidays for {code:<5s} ({number} holidays)')
-        pickle.dump(dic, open(f'holidays_{code}.bin', 'wb'))
+        with open(f'holidays_{code}.bin', 'wb') as file:
+            pickle.dump(dic, file)
 
 if __name__=='__main__': write_down(lab, hol)

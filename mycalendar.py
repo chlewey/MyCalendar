@@ -10,6 +10,7 @@ fmt_blank = '   '
 fmt_label = ' ' + Fore.BLACK + Back.BLUE + '{:^20s}' + Style.RESET_ALL
 
 months = []
+months_d = []
 weekdays = []
 date_str_format = '{0:d} {1:s}'
 date_num_format = '{1:d}/{0:d}'
@@ -91,7 +92,7 @@ class Date:
         if fmt=='':
             return self.__str__()
         elif 's' in fmt:
-            s = date_str_format.format(self._day, months[self._month])
+            s = date_str_format.format(self._day, months_d[self._month])
             return format(s, fmt)
         else:
             return format(self[date_order[0]], fmt) + '/' + format(self[date_order[1]], fmt)
@@ -339,6 +340,7 @@ if __name__ == '__main__':
     except FileNotFoundError:
         raise FileNotFoundError(f'No lables files for language {args.language.lower()}.')
     months = labels['MONTHS']
+    months_d = labels['MONTHS_D'] if 'MONTHS_D' in labels else months
     weekdays = labels['WEEKDAYS']
     date_str_format = labels['FORMAT_STR']
     date_num_format = labels['FORMAT_NUM']
