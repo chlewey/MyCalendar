@@ -370,6 +370,8 @@ if __name__ == '__main__':
             holidays = DateList( year )
             if args.country:
                 holidays, semidays = get_holidays( year, args.country )
+            else:
+                semidays = holidays
             make_calendar( year, args.columns, args.vertical, args.language,
                           holidays=holidays,
                           semidays=semidays,
