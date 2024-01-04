@@ -10,14 +10,21 @@ import pickle
 # 'FORMAT_NUM' is the format string used to display the date in the calendar in short format. The {0} and {1} are the day and month.
 # 'ORDER' is the order of the day and month in the format string: [0,1] for day first, [1,0] for month first
 lab = {
-    'de': { # Deutsch
+    'ar': { # Arabic
+        'MONTHS': [None, 'جانفي', 'فيفري', 'مارس', 'أفريل', 'ماي', 'جوان', 'جويلية', 'أوت', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'],
+        'WEEKDAYS': ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'],
+        'FORMAT_STR': '{0:2d} {1:s}',
+        'FORMAT_NUM': '{0:2d}/{1:02d}',
+        'ORDER': [0,1]
+    },
+    'de': { # German
         'MONTHS': [None, 'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'],
         'WEEKDAYS': ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'],
         'FORMAT_STR': '{0:2d} {1:s}',
         'FORMAT_NUM': '{0:2d}/{1:02d}',
         'ORDER': [0,1]
     },
-    'dk': { # Dansk
+    'da': { # Danish
         'MONTHS': [None, 'januar', 'februar', 'marts', 'april', 'maj', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'december'],
         'WEEKDAYS': ['søndag', 'mandag', 'tirsdag', 'onsdag', 'torsdag', 'fredag', 'lørdag'],
         'FORMAT_STR': '{0:2d} {1:s}',
@@ -37,6 +44,13 @@ lab = {
         'FORMAT_STR': '{1:s} {0:2d}',
         'FORMAT_NUM': '{1:2d}/{0:d}',
         'ORDER': [1,0]
+    },
+    'eo': { # Esperanto
+        'MONTHS': [None, 'januaro', 'februaro', 'marto', 'aprilo', 'majo', 'junio', 'julio', 'aŭgusto', 'septembro', 'oktobro', 'novembro', 'decembro'],
+        'WEEKDAYS': ['dimanĉo', 'lundo', 'mardo', 'merkredo', 'ĵaŭdo', 'vendredo', 'sabato'],
+        'FORMAT_STR': '{0:2d} {1:s}',
+        'FORMAT_NUM': '{0:2d}/{1:02d}',
+        'ORDER': [0,1]
     },
     'es': { # Spanish
         'MONTHS': [None, 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'],
@@ -66,14 +80,14 @@ lab = {
         'FORMAT_NUM': '{0:2d}/{1:02d}',
         'ORDER': [0,1]
     },
-    'jp': { # Japanese
+    'ja': { # Japanese
         'MONTHS': [None, '1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
         'WEEKDAYS': ['日', '月', '火', '水', '木', '金', '土'],
         'FORMAT_STR': '{1:s}{0:2d}日',
         'FORMAT_NUM': '{1:2d}-{0:02d}',
         'ORDER': [1,0]
     },
-    'kr': { # Korean
+    'ko': { # Korean
         'MONTHS': [None, '1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
         'WEEKDAYS': ['일', '월', '요', '화', '수', '목', '금'],
         'FORMAT_STR': '{1:s}{0:2d}일',
@@ -87,7 +101,14 @@ lab = {
         'FORMAT_NUM': '{0:2d}/{1:02d}',
         'ORDER': [0,1]
     },
-    'no': { # Norwegian
+    'nb': { # Norwegian bokmål
+        'MONTHS': [None, 'januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember'],
+        'WEEKDAYS': ['søndag', 'mandag', 'tirsdag', 'onsdag', 'torsdag', 'fredag', 'lørdag'],
+        'FORMAT_STR': '{0:2d} {1:s}',
+        'FORMAT_NUM': '{0:2d}/{1:02d}',
+        'ORDER': [0,1]
+    },
+    'nn': { # Norwegian nynorsk
         'MONTHS': [None, 'januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember'],
         'WEEKDAYS': ['søndag', 'mandag', 'tirsdag', 'onsdag', 'torsdag', 'fredag', 'lørdag'],
         'FORMAT_STR': '{0:2d} {1:s}',
@@ -101,7 +122,7 @@ lab = {
         'FORMAT_NUM': '{0:2d}/{1:02d}',
         'ORDER': [0,1]
     },
-    'po': { # Portuguese
+    'pt': { # Portuguese
         'MONTHS': [None, 'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'],
         'WEEKDAYS': ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado'],
         'FORMAT_STR': '{0:2d} de {1:s}',
@@ -200,9 +221,7 @@ hol = {
     }
 }
 
-import pickle
-
-def main(labels, holidays):
+def write_down(labels, holidays):
     for code, dic in labels.items():
         month = dic['MONTHS'][1]
         date = dic['FORMAT_STR'].format(1, month)
@@ -216,4 +235,4 @@ def main(labels, holidays):
         print(f'Holidays for {code:<5s} ({number} holidays)')
         pickle.dump(dic, open(f'holidays_{code}.bin', 'wb'))
 
-if __name__=='__main__': main(lab, hol)
+if __name__=='__main__': write_down(lab, hol)
