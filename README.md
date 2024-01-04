@@ -6,18 +6,21 @@ usage: `mycalendar.py [-h] [-t] [-p] [-f COUNTRY] [-l LANGUAGE] [-c COLUMNS] [-v
 Calendar generator
 
 | positional arguments:               |                                          |
-|-------------------------------------|------------------------------------------|
+| ----------------------------------- | ---------------------------------------- |
 | year                                |  Year (First year)                       |
 | year_to                             |  Last Year                               |
+
 | options:                            |                                          |
 |-------------------------------------|------------------------------------------|
 | -h, --help                          |      show this help message and exit     |
 | -t, --test                          |      Test mode                           |
 | -p, --easter                        |      Only calculate Easter               |
+
 | Location:                           |                                          |
 |-------------------------------------|------------------------------------------|
 | -f COUNTRY, --holidays COUNTRY      |    Country code for holidays             |
 | -l LANGUAGE, --language LANGUAGE    |    Display language                      |
+
 |  Display:                           |                                          |
 |-------------------------------------|------------------------------------------|
 | -c COLUMNS, --columns COLUMNS       | Columns of months to display             |
