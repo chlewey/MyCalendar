@@ -1,31 +1,17 @@
 #!/bin/python3
 from colorama import Fore, Back, Style
 import pickle
-fmt_norm = '{:3}'
-fmt_fest = Fore.RED + Style.BRIGHT + '{:3}' + Style.RESET_ALL
-fmt_domi = Fore.RED + Style.DIM  + '{:3}' + Style.RESET_ALL
-fmt_semi = Fore.YELLOW + '{:3}' + Style.RESET_ALL
-fmt_saba = Fore.BLUE + '{:3}' + Style.RESET_ALL
-fmt_blank = '   '
-fmt_label = ' ' + Fore.BLACK + Back.BLUE + '{:^20s}' + Style.RESET_ALL
-
-months = []
-months_d = []
-weekdays = []
-date_str_format = '{0:d} {1:s}'
-date_num_format = '{1:d}/{0:d}'
-date_order = [0,1]
 
 class MonthArray:
     def __init__(self):
         self._months_normal = [ 0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 ]
-        self._months_lap = [ 0, 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 ]
+        self._months_leap = [ 0, 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 ]
         self._acum_normal = [ sum(self._months_normal[:n]) for n in range(len(self._months_normal)+1) ]
-        self._acum_lap = [ sum(self._months_lap[:n]) for n in range(len(self._months_lap)+1) ]
+        self._acum_leap = [ sum(self._months_leap[:n]) for n in range(len(self._months_leap)+1) ]
 
-    def __call__(self, yearday, lap=False, at_March=False):
-        acum = self._acum_lap if lap else self._acum_normal
-        if lap and at_March:
+    def __call__(self, yearday, leap=False, at_March=False):
+        acum = self._acum_leap if leap else self._acum_normal
+        if leap and at_March:
             yearday -= 1
         for m in range(len(acum)):
             if acum[m] < yearday:
@@ -33,30 +19,29 @@ class MonthArray:
                 day = yearday - acum[m]
         return day, mon
     
-    def last_day(self, month, lap=False):
-        if lap:
-            return self._months_lap[month]
+    def last_day(self, month, leap=False):
+        if leap:
+            return self._months_leap[month]
         else:
             return self._months_normal[month]
     
-    def days(self, month, day, lap=False, at_March=False):
-        #print(f"DEB: {month}: {self._acum_normal[month]} {self._acum_lap[month]} {lap}")
-        if lap:
-            return self._acum_lap[month] + day - (1 if at_March else 0)
+    def days(self, month, day, leap=False, at_March=False):
+        if leap:
+            return self._acum_leap[month] + day - (1 if at_March else 0)
         else:
             return self._acum_normal[month] + day
     
 class Date:
     montharr = MonthArray()
 
-    def __init__(self, day, month=None, lap=False, at_March=False):
+    def __init__(self, day, month=None, leap=False, at_March=False):
         if month is None:
             if isinstance(day, int):
-                self._day, self._month = self.montharr(day, lap, at_March)
+                self._day, self._month = self.montharr(day, leap, at_March)
             elif day is Date:
                 self._day = day._day
                 self._month = day._month
-                self._lap = day._lap
+                self._leap = day._leap
             else:
                 try:
                     self._day = day[0]
@@ -67,7 +52,7 @@ class Date:
         else:
             self._day = day
             self._month = month
-        self._lap = lap
+        self._leap = leap
 
     @property
     def day(self):
@@ -86,31 +71,44 @@ class Date:
             raise IndexError
         
     def __str__(self):
-        return date_num_format.format(self._day, self._month)
+        return Calendar.format_value(self, 'short')
     
     def __format__(self, fmt):
         if fmt=='':
             return self.__str__()
         elif 's' in fmt:
-            s = date_str_format.format(self._day, months_d[self._month])
+            s = Calendar.format_value(self, 'long')
             return format(s, fmt)
         else:
-            return format(self[date_order[0]], fmt) + '/' + format(self[date_order[1]], fmt)
+            return format(self[Calendar.day_order()], fmt) + '/' + format(self[Calendar.month_order()], fmt)
         
     def __tuple__(self):
         return (self._month, self._day)
 
     def year_day(self, at_March=False):
-        return self.montharr.days(self._month, self._day, self._lap, at_March)
+        return self.montharr.days(self._month, self._day, self._leap, at_March)
         
 class Year:
+    _fmt = {
+        'norm': '{:3}',
+        'fest': Fore.RED + Style.BRIGHT + '{:3}' + Style.RESET_ALL,
+        'domi': Fore.RED + Style.DIM  + '{:3}' + Style.RESET_ALL,
+        'semi': Fore.YELLOW + '{:3}' + Style.RESET_ALL,
+        'saba': Fore.BLUE + '{:3}' + Style.RESET_ALL,
+        'blank': '   ',
+        'label': ' ' + Fore.BLACK + Back.BLUE + '{:^20s}' + Style.RESET_ALL
+    }
     montharr = MonthArray()
 
     def __init__(self, year):
         year = int(year)
         self._year = year
         self._index = (year + year//4 - year//100 + year//400) % 7
-        self._lap = ( year%4 == 0 and year%100 != 0 or year%400 == 0 )
+        self._leap = ( year%4 == 0 and year%100 != 0 or year%400 == 0 )
+
+    @classmethod
+    def format_value(cls, value, value_type='norm'):
+        return cls._fmt[value_type].format(value)
     
     def __int__(self):
         return self._year
@@ -124,18 +122,18 @@ class Year:
         else:
             return format(self._year, fmt)
     
-    def is_lap(self):
-        return self._lap
+    def is_leap(self):
+        return self._leap
     
     def firstJan(self):
-        return (self._index + (6 if self._lap else 0)) % 7
+        return (self._index + (6 if self._leap else 0)) % 7
     
     def firstMarch(self):
         return (self._index + 3) % 7
     
     def first(self, month):
         ac = self.montharr._acum_normal[month] + self._index
-        if month<=2 and self._lap:
+        if month<=2 and self._leap:
             return (ac-1) % 7
         else:
             return ac % 7
@@ -157,15 +155,15 @@ class Year:
             days = 28
         elif d == 28 and e == 6 and a > 10:
             days = 27
-        delta = 82 if self._lap and not as_date else 81
+        delta = 82 if self._leap and not as_date else 81
         return Date(delta + days) if as_date else delta + days
     
     def date(self, days, at_March=False):
-        return Date( days, lap=self._lap, at_March=at_March )
+        return Date( days, leap=self._leap, at_March=at_March )
     
     def week_day(self, date, at_March=True):
         if isinstance(date, tuple):
-            date = Date(date, lap=self._lap)
+            date = Date(date, leap=self._leap)
         days = date.year_day(at_March)
         return (self._index + days - 1) % 7
     
@@ -173,7 +171,7 @@ class Year:
         days = date.year_day(at_March)
         wd = self.week_day(date)
         days += (week_day - wd) % 7
-        return Date( days, lap=self._lap, at_March=at_March )
+        return Date( days, leap=self._leap, at_March=at_March )
     
     def prt_week(self, first, month, holidays=None, semidays=None, last=None):
         if last is None:
@@ -181,20 +179,20 @@ class Year:
         s = ''
         for n in range(first, first+7):
             if n<1 or n>last:
-                s += fmt_blank
+                s += self._fmt['blank']
                 continue
-            d = Date(n, month, lap=self._lap)
+            d = Date(n, month, leap=self._leap)
             wd = self.week_day(d)
             if holidays and d in holidays:
-                s += fmt_fest.format(n)
+                s += self.format_value(n, 'fest')
             elif semidays and d in semidays:
-                s += fmt_semi.format(n)
+                s += self.format_value(n, 'semi')
             elif wd == 0:
-                s += fmt_domi.format(n)
+                s += self.format_value(n, 'domi')
             elif wd == 6:
-                s += fmt_saba.format(n)
+                s += self.format_value(n, 'saba')
             else:
-                s += fmt_norm.format(n)
+                s += self.format_value(n)
         return s
     
 class DateList:
@@ -204,19 +202,25 @@ class DateList:
 
     def add(self, day, month=None, next=None, at_March=False):
         date = None
-        lap = self._year.is_lap()
+        leap = self._year.is_leap()
         if isinstance( month, str ):
-            if month.lower() in months:
-                month = months.index(month.lower())
-            elif month.lower() in ('pascua', 'easter'):
+            if month.lower() in ('pascua', 'easter'):
                 easter = self._year.computus(False)
-                date = Date( easter+day, lap=lap, at_March=at_March )
+                date = Date( easter+day, leap=leap, at_March=at_March )
+            else:
+                month = Calendar.month_index(month) or int(month)
         if date is None:
-            date = Date( day, month, lap, at_March )
+            date = Date( day, month, leap, at_March )
         if next is not None:
             date = self._year.next(next, date, at_March)
         self._dates.append(date)
         return date
+    
+    def add_list(self, dates, at_March=False):
+        if not dates: return
+        for date in dates:
+            month, day = tuple(date)
+            self.add(day, month, at_March=at_March)
     
     def sort(self):
         self._dates.sort(key = lambda d: d.year_day() )
@@ -243,76 +247,294 @@ class DateList:
     def __format__(self, fmt):
         ar = [format(d, fmt) for d in self._dates]
         return '[' + ', '.join(ar) + ']'
+    
+    def _reset(self):
+        self._dates = []
 
-def make_calendar(year, columns=3, vertical=False, language='es', holidays=None, semidays=None, sep='  ', first=0):
-    rows = (12 // columns) + (12 % columns > 0)
-    year_fmt = ' {:^' + str(columns * (len(sep)+21) - len(sep) - 1) + 's}'
-    print( year_fmt.format(year) )
-    for row in range(rows):
-        labels = []
-        lines = [[] for r in range(6)]
-        for col in range(columns):
-            month = 1 + row + col*rows if vertical else 1 + row*columns + col
-            if month>12:
-                continue
-            labels.append( fmt_label.format(months[month]) )
-            d = -((year.first(month) - first - 1) % 7)
-            for w in range(6):
-                s = year.prt_week(d+7*w, month, holidays, semidays)
-                lines[w].append( s )
-        print( sep.join(labels) )
-        for line in lines:
-            print( sep.join(line) )
+class Calendar(Year):
+    _months = []
+    _months_d = []
+    _weekdays = []
+    _date_str_format = '{0:d} {1:s}'
+    _date_num_format = '{1:d}/{0:d}'
+    _date_order = [0,1]
 
-def get_holidays(year, country_code):
-    try:
-        holiday_data = pickle.load(open('holidays_' + country_code.lower() + '.bin', 'rb'))
-    except FileNotFoundError:
-        raise FileNotFoundError(f'No holidays files for country {country_code.lower()}.')
-    holidays = DateList( year )
-    semidays = DateList( year )
-    for key, items in holiday_data.items():
-        if key=='FIX':
-            for m,d in items:
-                holidays.add( d, m )
-        elif key=='@FIX':
-            for m,d in items:
-                semidays.add( d, m )
-        elif key[:2]=='N:':
-            for m,d in items:
-                holidays.add( d, m, next=int(key[2:]) )
-        elif key[:3]=='@N:':
-            for m,d in items:
-                semidays.add( d, m, next=int(key[3:]) )
-        elif key[1]==':':
-            p,q = int(key[0]), int(key[2:])
-            if p < q:
-                tg = range(p, q)
-            else:
-                tg = list(range(p, 7)) + list(range(0, q))
-            for m,d in items:
-                if year.week_day((d,m)) in tg:
-                    holidays.add( d, m, next=q )
-                else:
-                    holidays.add( d, m )
-        elif key[0]=='@' and key[2]==':':
-            p,q = int(key[1]), int(key[3:])
-            if p < q:
-                tg = range(p, q)
-            else:
-                tg = list(range(p, 7)) + list(range(0, q))
-            for m,d in items:
-                if year.week_day((d,m)) in tg:
-                    semidays.add( d, m, next=q )
-                else:
-                    semidays.add( d, m )
-        elif key=='PASC':
-            for d in items:
-                holidays.add( d, 'Pascua' )
-        elif key=='@PASC':
-            for d in items:
-                semidays.add( d, 'Pascua' )
-    return holidays, semidays
+    def __init__(self, year, language='es', country=None, holidays=None, semidays=None, columns=3, vertical=False, first_day=0, args=None):
+        super().__init__(year)
+        self._holidays = [ DateList(year), DateList(year) ]
+        self._sep = '  '
+        if args:
+            self._first = args.first_day
+            self._columns = args.columns
+            self._vertical = args.vertical
+            self._set_language(args.language)
+            self._set_country(args.country)
+        else:
+            self._first = first_day
+            self._holidays[0].add_list(holidays)
+            self._holidays[1].add_list(semidays)
+            self._columns = columns
+            self._vertical = vertical
+            self._set_language(language)
+            self._set_country(country)
+
+    @classmethod
+    def format_value(cls, value, fmt_type='norm'):
+        if fmt_type in cls._fmt:
+            return cls._fmt[fmt_type].format(value)
+        if isinstance(value, int):
+            month, day = value, value
+            wd = value % 7
+        elif isinstance(value, Date):
+            month, day = value.month, value.day
+        elif isinstance(value, tuple):
+            month, day = value
+        if fmt_type == 'month':
+            return cls._months[month]
+        if fmt_type == 'month_d':
+            return cls._months_d[month]
+        if fmt_type == 'weekday':
+            return cls._weekdays[value]
+        if fmt_type == 'long':
+            return cls._date_str_format.format(day, cls._months_d[month])
+        if fmt_type == 'short':
+            return cls._date_num_format.format(day, month)
+        if '{' in fmt_type:
+            fmt_type.format(value)
+        return value.__format__(fmt_type)
+    
+    @classmethod
+    def month_index(cls, month):
+        month = month.lower()
+        months = [m.lower() for m in cls._months]
+        if month in months:
+            return months.index(month)
+        months = [m.lower() for m in cls._months_d]
+        if month in months:
+            return months.index(month)
+        return False
+    
+    @classmethod
+    def day_order(cls):
+        return cls._date_order[0]
+    
+    @classmethod
+    def month_order(cls):
+        return cls._date_order[1]
+    
+    def weekday(self, day):
+        if isinstance(day, Date):
+            day = self.week_day(day)
+        return self._weekdays[day]
+    
+    def _set_language(self, language):
+        self._language = language.lower()
+        label_file = 'labels_' + self._language + '.bin'
+        try:
+            with open(label_file, 'rb') as file:
+                labels = pickle.load(file)
+        except FileNotFoundError:
+            raise FileNotFoundError(f'No labels file for language {language}.')
+        Calendar._months = labels['MONTHS']
+        Calendar._months_d = labels['MONTHS_D'] if 'MONTHS_D' in labels else labels['MONTHS']
+        Calendar._weekdays = labels['WEEKDAYS']
+        Calendar._date_str_format = labels['FORMAT_STR']
+        Calendar._date_num_format = labels['FORMAT_NUM']
+        Calendar._date_order = labels['ORDER']
+
+    def _set_country(self, code):
+        if code == -1:
+            self._country_code = None
+            self._holidays[0]._reset()
+            self._holidays[1]._reset()
+        elif code:
+            self._country_code = code.lower()
+            holidays_file = 'holidays_' + self._country_code + '.bin'
+            try:
+                with open(holidays_file, 'rb') as file:
+                    holiday_dict = pickle.load(file)
+            except FileNotFoundError:
+                raise FileNotFoundError(f'No holidays file for country {code}.')
+            self.add_holidays(holiday_dict)
+        else:
+            self._country_code = None
+
+    @property
+    def year(self):
+        return int(self)
+    
+    @year.setter
+    def year(self, value: int):
+        super().__init__(value)
+    
+    @property
+    def language(self):
+        return self._language
+    
+    @language.setter
+    def language(self, code):
+        self._set_language(code)
+
+    @property
+    def country(self):
+        return self._country_code
+    
+    @country.setter
+    def country(self, code):
+        self._set_country(code)
+
+    @property
+    def columns(self):
+        return self._columns
+    
+    @columns.setter
+    def columns(self, number: int):
+        assert 0 < number <= 12
+        self._columns = number
+
+    @property
+    def rows(self):
+        return (12 // self._columns) + (12 % self._columns > 0)
+
+    @property
+    def vertical(self):
+        return self._vertical
+    
+    @vertical.setter
+    def vertical(self, value: bool):
+        self._vertical = value
+
+    @property
+    def sep(self):
+        return self._sep
+    
+    @sep.setter
+    def sep(self, value: str):
+        self._sep = value
+
+    @property
+    def first_day(self):
+        return self._first
+    
+    @first_day.setter
+    def first_day(self, value: int):
+        self._first = value % 7
+    
+    @property
+    def easter(self):
+        return self.computus(as_date=True)
+
+    def add_holiday(self, day, month, next=None, at_March=False, semi=False):
+        index = 1 if semi else 0
+        self._holidays[index].add(day, month, next=next, at_March=at_March)
+
+    def add_holidays(self, holidays, semi=False):
+        index = int(semi)
+        if isinstance(holidays, (list, DateList)):
+            self._holidays[index].add_list(holidays)
+        elif isinstance(holidays, (tuple, Date)):
+            month, day = tuple(holidays)
+            self._holidays[index].add(day, month)
+        elif isinstance(holidays, dict):
+            for key, items in holidays.items():
+                index = int(key[0]=='@')
+                key = key[index:]
+
+                if ':' in key:
+                    pre, target = key.split(':')
+                    target = int(target)
+                    if pre == 'N':
+                        for m, d in items:
+                            self._holidays[index].add(d, m, next=target)
+                    else:
+                        pre = int(pre)
+                        if pre < target:
+                            target_range = list(range(pre, target))
+                        else:
+                            target_range = list(range(pre, 7)) + list(range(0, target))
+                        for m, d in items:
+                            if self._Year.week_day((d, m)) in target_range:
+                                self._holidays[index].add(d, m, next=target)
+                            else:
+                                self._holidays[index].add(d, m)
+                elif key == 'FIX':
+                    for m, d in items:
+                        self._holidays[index].add(d, m)
+                elif key == 'PASC':
+                    for d in items:
+                        self._holidays[index].add(d, 'Pascua')
+        return self._holidays[int(semi)]
+
+    def _reset(self, columns=None, vertical=None, language=None, sep=None, first=None, holidays=None, semidays=None):
+        if columns is not None:
+            self.columns = columns
+        if vertical is not None:
+            self.vertical = vertical
+        if language is not None:
+            self.language = language
+        if sep is not None:
+            self.sep = sep
+        if first is not None:
+            self.first_day = first
+        return (self.columns, self.rows, self.vertical,
+                self.language, self.sep, self.first_day,
+                self._holidays[0] if holidays is None else holidays,
+                self._holidays[1] if semidays is None else semidays)
+
+    def __call__(self, write=False, columns=None, vertical=None, language=None, holidays=None, semidays=None, sep=None, first=None):
+        columns, rows, vertical, language, sep, first, holidays, semidays = self._reset(columns, vertical, language, sep, first, holidays, semidays)
+        output = []
+
+        year = int(self)
+        year_fmt = ' {:^' + str(columns * (len(sep) + 21) - len(sep) - 1) + 's}'
+        output.append(year_fmt.format(str(year)))
+
+        for row in range(rows):
+            labels = []
+            lines = [[] for _ in range(6)]
+
+            for col in range(columns):
+                month = 1 + row + col * rows if vertical else 1 + row * columns + col
+
+                if month > 12:
+                    continue
+
+                labels.append(self._fmt['label'].format(self._months[month]))
+                d = -((self.first(month) - first - 1) % 7)
+
+                for w in range(6):
+                    s = self.prt_week(d + 7 * w, month, holidays, semidays)
+                    lines[w].append(s)
+
+            output.append(sep.join(labels))
+
+            for line in lines:
+                output.append(sep.join(line))
+        
+        if write:
+            print('\n'.join(output))
+        else:
+            return '\n'.join(output)
+    
+    def test(self, write=False):
+        easter = self.easter
+        output = []
+        output.append(f'{self.year}: {self.is_leap()}')
+        output.append( f'{easter:s}, {easter:d}, {easter}' )
+        output.append( '(' + ', '.join([self._weekdays[self.first(n)] for n in range(1, 13)]) + ')' )
+        for d in self._holidays[0]:
+            output.append( f'{d}, {self.weekday(d)}' )
+        if write:
+            print('\n'.join(output))
+        else:
+            return '\n'.join(output)
+
+    def test_easter(self, write=False):
+        string = f'{self.year}: {self.easter:s}'
+        if write:
+            print(string)
+        else:
+            return string
 
 if __name__ == '__main__':
     import argparse
@@ -334,47 +556,14 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    label_file = 'labels_' + args.language.lower() + '.bin'
-    try:
-        labels = pickle.load(open(label_file, 'rb'))
-    except FileNotFoundError:
-        raise FileNotFoundError(f'No lables files for language {args.language.lower()}.')
-    months = labels['MONTHS']
-    months_d = labels['MONTHS_D'] if 'MONTHS_D' in labels else months
-    weekdays = labels['WEEKDAYS']
-    date_str_format = labels['FORMAT_STR']
-    date_num_format = labels['FORMAT_NUM']
-    date_order = labels['ORDER']
-
-    if args.country:
-        try:
-            festivities = pickle.load(open('holidays_' + args.country.lower() + '.bin', 'rb'))
-        except FileNotFoundError:
-            raise FileNotFoundError(f'No holidays files for country {args.country.lower()}.')
-
-    if args.year_to is None:
-        args.year_to = args.year
-    for y in range(args.year, args.year_to+1):
-        year = Year(y)
+    year_to = args.year_to or args.year
+    for y in range(args.year, year_to+1):
+        frame = Calendar(y, args=args)
         if args.test:
-            easter = year.computus()
-            print( year, year.is_lap() )
-            print( f'{easter:s}, {easter:d}, {easter}' )
-            print( [year.first(n) for n in range(1, 13)] )
-            if args.country:
-                holidays, _ = get_holidays( year, args.country )
-                for d in holidays:
-                    print( d, weekdays[year.week_day(d)] )
+            frame.test(True)
         elif args.easter:
-            easter = year.computus()
-            print( f'{year}: {easter:s}' )
+            frame.test_easter(True)
         else:
-            holidays = DateList( year )
-            if args.country:
-                holidays, semidays = get_holidays( year, args.country )
-            else:
-                semidays = holidays
-            make_calendar( year, args.columns, args.vertical, args.language,
-                          holidays=holidays,
-                          semidays=semidays,
-                          first=args.first_day )
+            frame(True)
+            if y!=year_to:
+                print()

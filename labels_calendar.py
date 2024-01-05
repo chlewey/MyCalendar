@@ -5,6 +5,7 @@ import pickle
 # For each language define the months and weekdays
 # use a two letter language code for common languages, and hyphen for regional variants, all lowercase.
 # 'MONTHS' is a list of month names, shall start with None as firts ([0]) element.
+# 'MONTHS_D' names of months as used in dates as opposed to months as used in the calendar, v.g. genitive vs nominative.
 # 'WEEKDAYS' is a list of week day names, shall start with Sunday as firts ([0]) element.
 # 'FORMAT_STR' is the format string used to display the date in the calendar in long format. The {0} and {1} are the day and month.
 # 'FORMAT_NUM' is the format string used to display the date in the calendar in short format. The {0} and {1} are the day and month.
