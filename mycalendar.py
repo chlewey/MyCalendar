@@ -446,6 +446,17 @@ class Calendar(Year):
                     if pre == 'N':
                         for m, d in items:
                             self._holidays[index].add(d, m, next=target)
+                    elif pre[0] == 'M':
+                        pre = int(pre[1:])
+                        if pre < target:
+                            target_range = list(range(pre, target))
+                        else:
+                            target_range = list(range(pre, 7)) + list(range(0, target))
+                        for m, d in items:
+                            if self.week_day((d, m)) not in target_range:
+                                self._holidays[index].add(d, m, next=target)
+                            else:
+                                self._holidays[index].add(d, m)
                     else:
                         pre = int(pre)
                         if pre < target:
@@ -453,7 +464,7 @@ class Calendar(Year):
                         else:
                             target_range = list(range(pre, 7)) + list(range(0, target))
                         for m, d in items:
-                            if self._Year.week_day((d, m)) in target_range:
+                            if self.week_day((d, m)) in target_range:
                                 self._holidays[index].add(d, m, next=target)
                             else:
                                 self._holidays[index].add(d, m)
